@@ -23,6 +23,7 @@ public:
 
 	bool Add(int* data);
 	int Find(int** find, int* queryCounts);
+	int GetResult(unsigned char* query);
 };
 
 cBitMapIndex::cBitMapIndex(int capacity, int columnCount, int* cardinality, int numOfBits)
@@ -150,7 +151,7 @@ int cBitMapIndex::Find(int** data, int* queryCounts)
 
 				if (data[index][0] == -1) {
 					shift = missingBits;
-					query[i] = (((1 << mCardinality[index])-1) << (shift < 0 ? 0 : shift));
+					query[i] = (((1 << mCardinality[index]) - 1) << (shift < 0 ? 0 : shift));
 				}
 				else {
 					for (int j = 0; j < queryCounts[index]; j++) {
@@ -162,7 +163,7 @@ int cBitMapIndex::Find(int** data, int* queryCounts)
 							query[i] |= (1 << shift);
 					}
 				}
-				
+
 				firstRun = false;
 				if (missingBits >= 0)
 					index++;
@@ -199,43 +200,38 @@ int cBitMapIndex::Find(int** data, int* queryCounts)
 		}
 	}
 
+	int res = GetResult(query);
+
+	delete[] query;
+
+	return res;
+}
+
+int cBitMapIndex::GetResult(unsigned char* query) {
 	int res = 0;
+	unsigned char* p = mData;
 
 	for (int i = 0; i < mCount; i++) {
-		unsigned char* p = GetRowPointer(i);
 
 		bool rowFound = true;
 
+		int notVisitedColumns = 0;
+
 		for (int j = 0; j < mRowSize; j++) {
 
+
 			if ((*((unsigned char*)p) & query[j]) != *((unsigned char*)p)) {
-				//std::cout << (int)*p << ' ' << (int)query[j] << '\n';
 				rowFound = false;
+				notVisitedColumns = mRowSize - j;
 				break;
 			}
 			p += sizeof(unsigned char);
 		}
-		if (rowFound){
-			//for (int j = 0; j < mRowSize; j++) {
-
-			//	std::cout << (int)query[j] << '\t';
-
-			//}
-			//std::cout << '\n';
-			//unsigned char* p = GetRowPointer(i);
-			//for (int j = 0; j < mRowSize; j++) {
-
-			//	std::cout << (int)*((unsigned char*)p) << '\t';
-			//	
-			//	p += sizeof(unsigned char);
-			//}
-			//std::cout << '\n';
-			//std::cout << '\n';
+		if (rowFound) {
 			res++;
 		}
+		p += notVisitedColumns * sizeof(unsigned char);
 	}
-
-	delete[] query;
 
 	return res;
 }

@@ -71,10 +71,15 @@ bool cHeapTable::Add(int* data)
 
 int cHeapTable::Find(int** data, int* queryCounts)
 {
+	char* p = mData;
 	int res = 0;
+
 	for (int i = 0; i < mCount; i++) {
-		char* p = GetRowPointer(i);
 		bool rowFound = true;
+
+
+		int notVisitedColumns = 0;
+
 		for (int j = 0; j < mColumnCount; j++) {
 			if (data[j][0] == -1) {
 				p += sizeof(int);
@@ -90,6 +95,7 @@ int cHeapTable::Find(int** data, int* queryCounts)
 			}
 			if (attrNotFound) {
 				rowFound = false;
+				notVisitedColumns = mColumnCount - j;
 				break;
 			}
 			p += sizeof(int);
@@ -97,6 +103,7 @@ int cHeapTable::Find(int** data, int* queryCounts)
 		if (rowFound) {
 			res++;
 		}
+		p += notVisitedColumns * sizeof(int);
 	}
 
 	return res;
